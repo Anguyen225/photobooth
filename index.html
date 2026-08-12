@@ -1,548 +1,705 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Photobooth Studio</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@latest/tabler-icons.min.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --color-cream: #F5ECDD;
-      --color-gold: #E8B84B;
-      --color-red: #C4453A;
-      --color-dark: #170F13;
-      --color-panel: #241720;
-    }
-    * { -webkit-tap-highlight-color: transparent; }
-    html, body {
-      font-family: 'Outfit', system-ui, sans-serif;
-      background: linear-gradient(135deg, #0f0a0d 0%, #1a0f14 50%, #0d0a0f 100%);
-      overflow: hidden;
-    }
-    .display-font { font-family: 'Playfair Display', serif; }
-    .screen { animation: fadeIn 0.5s ease both; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
-    @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
-    @keyframes pulse-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-    @keyframes pop { 0% { opacity: 0; transform: scale(1.8); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(0.8); } }
-    @keyframes slide-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-    .float-animation { animation: float 3s ease-in-out infinite; }
-    .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
-    .countdown-pop { animation: pop 0.7s ease both; }
-    .slide-down { animation: slide-down 0.3s ease; }
-    
-    /* Film sprockets */
-    .sprocket-hole { 
-      width: 12px; height: 12px; 
-      background: linear-gradient(135deg, rgba(0,0,0,0.3), rgba(0,0,0,0.1));
-      border-radius: 2px;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
-    }
-    
-    /* Custom scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(232, 184, 75, 0.3); border-radius: 3px; }
-    
-    /* Background decoration */
-    .bg-decoration {
-      position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0;
-    }
-    .decoration-circle {
-      position: absolute; border-radius: 50%;
-      background: radial-gradient(circle, rgba(232, 184, 75, 0.15), transparent);
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Photobooth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ---- Design tokens ---- */
+    --bg:            #170F13;   /* stage-curtain near-black */
+    --bg-panel:      #241720;   /* raised panel */
+    --bg-panel-2:    #2F1E2A;
+    --sprocket:      #0B0609;   /* punched film-hole colour */
+    --cream:         #F5ECDD;   /* primary text */
+    --muted:         #B29C90;   /* secondary text */
+    --accent-gold:   #E8B84B;   /* spotlight / shutter */
+    --accent-gold-d: #C99A34;
+    --accent-red:    #C4453A;   /* curtain red / recording */
+    --radius:        22px;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-t: env(safe-area-inset-top, 0px);
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:
+      radial-gradient(ellipse at 50% -10%, #3A2432 0%, transparent 55%),
+      var(--bg);
+    color:var(--cream);
+    font-family:'Space Grotesk', system-ui, sans-serif;
+    overscroll-behavior:none;
+    -webkit-user-select:none; user-select:none;
+  }
+  .display{ font-family:'Bebas Neue', 'Space Grotesk', sans-serif; letter-spacing:0.03em; }
+
+  #app{
+    position:relative;
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex; flex-direction:column;
+    padding-top:var(--safe-t);
+    padding-bottom:var(--safe-b);
+    overflow:hidden;
+  }
+
+  .screen{
+    flex:1; display:flex; flex-direction:column;
+    padding:20px 18px;
+    animation:fadeIn .35s ease both;
+  }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  /* ---------- Header ---------- */
+  .brand{
+    display:flex; align-items:baseline; justify-content:center; gap:10px;
+    margin-bottom:6px;
+  }
+  .brand .word{ font-size:34px; line-height:1; color:var(--cream); }
+  .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--accent-red); box-shadow:0 0 10px var(--accent-red); }
+  .tagline{ text-align:center; color:var(--muted); font-size:13px; letter-spacing:.08em; text-transform:uppercase; margin-bottom:28px; }
+
+  /* ---------- Start screen ---------- */
+  #start-screen{ justify-content:center; align-items:center; text-align:center; }
+  .start-frame{
+    width:min(320px, 78vw); aspect-ratio:3/4;
+    border-radius:var(--radius);
+    background:
+      repeating-linear-gradient(-45deg, rgba(232,184,75,0.06) 0 2px, transparent 2px 14px),
+      linear-gradient(160deg, var(--bg-panel-2), var(--bg-panel));
+    border:1px solid rgba(232,184,75,0.18);
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto 30px;
+    position:relative;
+  }
+  .start-frame svg{ width:64px; height:64px; opacity:.85; }
+  .btn{
+    -webkit-appearance:none; appearance:none; border:none; cursor:pointer;
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:16px;
+    border-radius:999px; padding:16px 34px;
+    background:var(--accent-gold); color:#241205;
+    box-shadow:0 8px 24px -8px rgba(232,184,75,0.55);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:active{ transform:scale(.96); box-shadow:0 4px 14px -6px rgba(232,184,75,0.5); }
+  .btn[disabled]{ opacity:.5; pointer-events:none; }
+  .btn.ghost{
+    background:transparent; color:var(--cream);
+    border:1px solid rgba(245,236,221,0.3); box-shadow:none;
+  }
+  .btn.small{ padding:10px 20px; font-size:13px; }
+  .hint{ margin-top:16px; color:var(--muted); font-size:12.5px; max-width:260px; }
+
+  /* ---------- Camera screen ---------- */
+  #camera-screen{ padding:14px 12px; }
+  .viewfinder-wrap{
+    position:relative; flex:1;
+    border-radius:var(--radius);
+    background:var(--sprocket);
+    padding:0 14px;
+    display:flex; align-items:stretch;
+    overflow:hidden;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(232,184,75,0.15);
+  }
+  .sprockets{
+    flex:0 0 16px; display:flex; flex-direction:column; justify-content:space-evenly;
+    align-items:center; padding:10px 0;
+  }
+  .sprockets span{
+    width:9px; height:9px; border-radius:2px; background:var(--bg);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);
+  }
+  .stage{
+    flex:1; position:relative; margin:10px 0; border-radius:10px; overflow:hidden;
+    background:#000;
+  }
+  video{
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+  video.mirror{ transform:scaleX(-1); }
+  .stage canvas{ display:none; }
+
+  .countdown{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+  .countdown span{
+    font-family:'Bebas Neue', sans-serif; font-size:min(30vw, 160px);
+    color:var(--cream); text-shadow:0 0 40px rgba(0,0,0,.6);
+    animation:pop .7s ease both;
+  }
+  @keyframes pop{ 0%{opacity:0; transform:scale(1.5);} 30%{opacity:1; transform:scale(1);} 100%{opacity:0; transform:scale(.85);} }
+
+  .shotcount{
+    position:absolute; top:12px; left:12px; z-index:3;
+    background:rgba(11,6,9,0.55); backdrop-filter:blur(6px);
+    border:1px solid rgba(245,236,221,0.2);
+    color:var(--cream); font-size:12px; font-weight:600;
+    padding:6px 12px; border-radius:999px; letter-spacing:.05em;
+  }
+
+  .flash-overlay{
+    position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:50;
+  }
+  .flash-overlay.fire{ animation:flash .35s ease-out; }
+  @keyframes flash{ 0%{opacity:0;} 12%{opacity:1;} 100%{opacity:0;} }
+
+  /* ---------- Controls ---------- */
+  .row-scroll{
+    display:flex; gap:10px; overflow-x:auto; padding:14px 2px 6px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .row-scroll::-webkit-scrollbar{ display:none; }
+  .chip{
+    flex:0 0 auto; padding:9px 16px; border-radius:999px;
+    background:var(--bg-panel); border:1px solid rgba(245,236,221,0.12);
+    color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
+    white-space:nowrap;
+  }
+  .chip.active{ background:var(--accent-gold); color:#241205; border-color:transparent; }
+
+  .controls-bottom{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 6px 4px;
+  }
+  .iconbtn{
+    width:50px; height:50px; border-radius:50%;
+    background:var(--bg-panel); border:1px solid rgba(245,236,221,0.15);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .iconbtn svg{ width:22px; height:22px; }
+
+  .shutter{
+    width:76px; height:76px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff2d1, var(--accent-gold) 60%, var(--accent-gold-d) 100%);
+    border:5px solid rgba(245,236,221,0.25);
+    box-shadow:0 10px 26px -8px rgba(232,184,75,0.6);
+    cursor:pointer;
+  }
+  .shutter:active{ transform:scale(.94); }
+  .shutter[disabled]{ opacity:.5; pointer-events:none; }
+
+  /* ---------- Result screen ---------- */
+  #result-screen{ align-items:center; }
+  .result-frame{
+    flex:1; width:100%; display:flex; align-items:center; justify-content:center;
+    padding:6px 0 14px;
+  }
+  .result-frame img{
+    max-height:100%; max-width:100%;
+    border-radius:14px; box-shadow:0 24px 60px -18px rgba(0,0,0,0.75);
+  }
+  .result-actions{
+    display:flex; gap:12px; width:100%; padding-bottom:6px;
+  }
+  .result-actions .btn{ flex:1; text-align:center; }
+
+  #error-box{
+    display:none; margin:14px 2px 0; padding:12px 14px; border-radius:14px;
+    background:rgba(196,69,58,0.14); border:1px solid rgba(196,69,58,0.4);
+    color:#F3C6C1; font-size:13px; line-height:1.5;
+    text-align:left;
+  }
+  #error-box .err-title{ font-weight:700; margin-bottom:4px; display:block; }
+  #error-box .err-steps{ margin:8px 0 0; padding-left:18px; }
+  #error-box .err-steps li{ margin-bottom:4px; }
+  #error-box .btn{ margin-top:10px; }
+
+  @media (prefers-reduced-motion: reduce){
+    .countdown span{ animation:none; }
+    .flash-overlay.fire{ animation:none; }
+    .screen{ animation:none; }
+  }
+</style>
 </head>
-<body class="bg-gray-950">
-  <!-- Background decorations -->
-  <div class="bg-decoration">
-    <div class="decoration-circle w-96 h-96 -top-48 -left-48 animate-pulse" style="animation-duration: 8s;"></div>
-    <div class="decoration-circle w-80 h-80 -bottom-40 -right-40 animate-pulse" style="animation-duration: 10s; animation-delay: 1s;"></div>
-    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30"></div>
+<body>
+<div id="app">
+
+  <!-- ===== START SCREEN ===== -->
+  <div class="screen" id="start-screen">
+    <div class="brand"><span class="word display">PHOTOBOOTH</span><span class="dot"></span></div>
+    <div class="tagline">chạm để bắt đầu buổi chụp</div>
+    <div class="start-frame">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#E8B84B" stroke-width="1.4">
+        <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/>
+        <circle cx="12" cy="13.5" r="3.6"/>
+      </svg>
+    </div>
+    <div style="text-align:center;">
+      <button class="btn" id="btn-start">Bật camera</button>
+      <div class="hint">Dùng camera điện thoại của bạn. Ảnh chỉ lưu trên máy, không tải lên đâu cả.</div>
+    </div>
+    <div id="error-box"></div>
   </div>
 
-  <div id="app" class="relative z-10 min-h-screen flex flex-col" 
-    x-data="photoboothApp()"
-    x-init="init()">
-
-    <!-- ===== START SCREEN ===== -->
-    <div id="start-screen" class="screen flex-1 flex flex-col items-center justify-center px-6 py-8"
-      x-show="currentScreen === 'start'" 
-      @click.away="currentScreen === 'start'">
-      
-      <!-- Header with animation -->
-      <div class="text-center mb-8 slide-down">
-        <div class="display-font text-5xl font-bold text-amber-100 mb-2 float-animation">
-          📸 PHOTOBOOTH
-        </div>
-        <p class="text-amber-200/60 text-sm tracking-widest uppercase">Bắt khoảnh khắc quý giá</p>
+  <!-- ===== CAMERA SCREEN ===== -->
+  <div class="screen" id="camera-screen" style="display:none;">
+    <div class="viewfinder-wrap">
+      <div class="sprockets">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       </div>
-
-      <!-- Frame preview with gradient -->
-      <div class="mb-8 animate-bounce" style="animation-duration: 3s;">
-        <div class="w-32 h-40 rounded-2xl bg-gradient-to-br from-amber-900/40 to-red-900/30 border-2 border-amber-500/40 flex items-center justify-center backdrop-blur-sm hover:border-amber-400/60 transition">
-          <i class="ti ti-camera text-amber-300 text-5xl opacity-80"></i>
-        </div>
+      <div class="stage">
+        <div class="shotcount" id="shotcount" style="display:none;"></div>
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
+        <div class="countdown" id="countdown"></div>
       </div>
-
-      <!-- Main CTA -->
-      <button @click="requestCameraAndEnter()"
-        class="px-8 py-3 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-gray-900 font-semibold text-lg hover:from-amber-300 hover:to-amber-400 active:scale-95 transition mb-4 shadow-lg hover:shadow-amber-500/50">
-        <i class="ti ti-camera-plus inline mr-2"></i> Bật Camera Ngay
-      </button>
-      
-      <p class="text-amber-200/50 text-xs max-w-xs text-center leading-relaxed">
-        📱 Dùng camera điện thoại | 🔒 Ảnh lưu trên máy bạn | 🚀 Nhanh & dễ dàng
-      </p>
-
-      <!-- Error display -->
-      <template x-if="errorMessage">
-        <div class="mt-8 w-full max-w-md p-4 rounded-xl bg-red-950/40 border border-red-500/30 text-red-200 text-sm slide-down">
-          <p class="font-semibold mb-2"><i class="ti ti-alert-triangle inline mr-2"></i> <span x-text="errorMessage"></span></p>
-          <ul class="ml-6 space-y-1 text-xs" x-show="errorSteps.length" style="display: none;">
-            <template x-for="step in errorSteps" :key="step">
-              <li>• <span x-html="step"></span></li>
-            </template>
-          </ul>
-          <button @click="errorMessage = ''; errorSteps = []"
-            class="mt-3 px-4 py-2 bg-amber-500 text-gray-900 rounded-lg text-xs font-semibold hover:bg-amber-400">
-            Thử lại
-          </button>
-        </div>
-      </template>
-    </div>
-
-    <!-- ===== CAMERA SCREEN ===== -->
-    <div id="camera-screen" class="screen flex-1 flex flex-col px-3 py-3 gap-2"
-      x-show="currentScreen === 'camera'">
-      
-      <!-- Film strip container -->
-      <div class="flex-1 flex gap-2 rounded-2xl overflow-hidden bg-black/80 backdrop-blur-sm border border-amber-500/20">
-        <!-- Left sprockets -->
-        <div class="flex flex-col justify-between py-2 px-1 bg-black/40">
-          <template x-for="i in 8" :key="i">
-            <div class="sprocket-hole"></div>
-          </template>
-        </div>
-
-        <!-- Video stage -->
-        <div class="flex-1 relative bg-black overflow-hidden rounded-lg">
-          <video id="video" autoplay playsinline muted 
-            class="w-full h-full object-cover transition-all"
-            :class="{'scale-x-[-1]': isMirrored}"></video>
-          
-          <!-- Shot counter -->
-          <template x-if="mode === 'strip3'">
-            <div class="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur border border-amber-500/40 text-amber-200 text-xs font-bold">
-              📷 <span x-text="`${shots.length + 1} / 3`"></span>
-            </div>
-          </template>
-
-          <!-- Countdown -->
-          <div id="countdown" class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div x-show="showCountdown" class="display-font text-8xl font-bold text-amber-100 text-shadow countdown-pop"
-              x-text="countdownNumber" style="display: none;"></div>
-          </div>
-
-          <canvas id="canvas" style="display: none;"></canvas>
-        </div>
-
-        <!-- Right sprockets -->
-        <div class="flex flex-col justify-between py-2 px-1 bg-black/40">
-          <template x-for="i in 8" :key="i">
-            <div class="sprocket-hole"></div>
-          </template>
-        </div>
-      </div>
-
-      <!-- Filter chips -->
-      <div class="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3">
-        <template x-for="(name, key) in filters" :key="key">
-          <button @click="filter = key"
-            :class="filter === key ? 'bg-amber-500 text-gray-900' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'"
-            class="flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition border border-gray-600">
-            <span x-text="name"></span>
-          </button>
-        </template>
-      </div>
-
-      <!-- Mode chips -->
-      <div class="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3">
-        <button @click="mode = 'single'"
-          :class="mode === 'single' ? 'bg-red-500 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'"
-          class="flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition border border-gray-600">
-          <i class="ti ti-square inline mr-1"></i> 1 Tấm
-        </button>
-        <button @click="mode = 'strip3'"
-          :class="mode === 'strip3' ? 'bg-red-500 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'"
-          class="flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition border border-gray-600">
-          <i class="ti ti-layout-list inline mr-1"></i> Dải 3 Tấm
-        </button>
-      </div>
-
-      <!-- Controls bottom -->
-      <div class="flex items-center justify-between gap-4 py-2">
-        <button @click="toggleCamera()"
-          :disabled="busy"
-          class="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 active:scale-90 disabled:opacity-50 transition flex items-center justify-center border border-gray-600">
-          <i class="ti ti-flip-horizontal text-xl text-amber-300"></i>
-        </button>
-
-        <button @click="capturePhoto()"
-          :disabled="busy"
-          class="w-20 h-20 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 active:scale-90 disabled:opacity-50 transition shadow-lg hover:shadow-amber-500/50 flex items-center justify-center">
-          <div class="w-16 h-16 rounded-full bg-gradient-to-br from-amber-200 to-amber-400 flex items-center justify-center">
-            <i class="ti ti-camera text-gray-900 text-2xl"></i>
-          </div>
-        </button>
-
-        <button @click="goHome()"
-          :disabled="busy"
-          class="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 active:scale-90 disabled:opacity-50 transition flex items-center justify-center border border-gray-600">
-          <i class="ti ti-home text-xl text-amber-300"></i>
-        </button>
+      <div class="sprockets">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       </div>
     </div>
 
-    <!-- ===== RESULT SCREEN ===== -->
-    <div id="result-screen" class="screen flex-1 flex flex-col items-center justify-center px-6 py-8 gap-6"
-      x-show="currentScreen === 'result'">
-      
-      <div class="display-font text-4xl font-bold text-amber-100 mb-4">✨ Ảnh Của Bạn</div>
+    <div class="row-scroll" id="filter-row">
+      <div class="chip active" data-filter="none">Gốc</div>
+      <div class="chip" data-filter="bw">Đen trắng</div>
+      <div class="chip" data-filter="vintage">Vintage</div>
+      <div class="chip" data-filter="cool">Lạnh</div>
+      <div class="chip" data-filter="warm">Ấm</div>
+    </div>
 
-      <!-- Result image frame -->
-      <div class="w-full max-w-sm flex-1 flex items-center justify-center rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 p-2 border border-amber-500/30">
-        <img id="result-img" alt="Ảnh chụp" 
-          class="max-w-full max-h-full rounded-xl shadow-2xl">
+    <div class="row-scroll" id="mode-row">
+      <div class="chip active" data-mode="single">1 tấm</div>
+      <div class="chip" data-mode="strip3">Dải 3 tấm</div>
+    </div>
+
+    <div class="controls-bottom">
+      <div class="iconbtn" id="btn-flip" title="Đổi camera">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#F5ECDD" stroke-width="1.6">
+          <path d="M17 2l4 4-4 4M7 22l-4-4 4-4M21 6H8a4 4 0 0 0-4 4M3 18h13a4 4 0 0 0 4-4"/>
+        </svg>
       </div>
-
-      <!-- Action buttons -->
-      <div class="flex gap-3 w-full">
-        <button @click="retakePhoto()"
-          class="flex-1 px-6 py-3 rounded-full border-2 border-amber-400 text-amber-300 font-semibold hover:bg-amber-400/10 active:scale-95 transition">
-          <i class="ti ti-reload inline mr-2"></i> Chụp Lại
-        </button>
-        <button @click="downloadPhoto()"
-          class="flex-1 px-6 py-3 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-gray-900 font-semibold hover:from-amber-300 hover:to-amber-400 active:scale-95 transition shadow-lg">
-          <i class="ti ti-download inline mr-2"></i> Tải Xuống
-        </button>
+      <div class="shutter" id="btn-shutter"></div>
+      <div class="iconbtn" id="btn-home" title="Về đầu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#F5ECDD" stroke-width="1.6">
+          <path d="M3 11l9-8 9 8M5 10v10h14V10"/>
+        </svg>
       </div>
     </div>
   </div>
 
-  <script>
-    function photoboothApp() {
-      return {
-        currentScreen: 'start',
-        stream: null,
-        video: null,
-        canvas: null,
-        facingMode: 'user',
-        isMirrored: true,
-        filter: 'none',
-        mode: 'single',
-        shots: [],
-        busy: false,
-        errorMessage: '',
-        errorSteps: [],
-        showCountdown: false,
-        countdownNumber: 3,
-        
-        filters: {
-          none: 'Gốc',
-          bw: '🖤 Đen Trắng',
-          vintage: '🎬 Vintage',
-          cool: '❄️ Lạnh',
-          warm: '🔥 Ấm'
-        },
+  <!-- ===== RESULT SCREEN ===== -->
+  <div class="screen" id="result-screen" style="display:none;">
+    <div class="brand"><span class="word display" style="font-size:26px;">ẢNH CỦA BẠN</span></div>
+    <div class="result-frame"><img id="result-img" alt="Ảnh đã chụp"></div>
+    <div class="result-actions">
+      <button class="btn ghost" id="btn-retake">Chụp lại</button>
+      <button class="btn" id="btn-download">Tải xuống</button>
+    </div>
+  </div>
 
-        init() {
-          this.video = document.getElementById('video');
-          this.canvas = document.getElementById('canvas');
-          this.setupVideoFilter();
-        },
+  <div class="flash-overlay" id="flash"></div>
+</div>
 
-        isIOS() {
-          return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        },
+<script>
+(function(){
+  "use strict";
 
-        setupVideoFilter() {
-          if (!this.video) return;
-          const filterMap = {
-            none: 'none',
-            bw: 'grayscale(1) contrast(1.12)',
-            vintage: 'sepia(.35) saturate(1.3) contrast(1.05) brightness(1.02)',
-            cool: 'saturate(1.1) hue-rotate(-10deg) brightness(1.02) contrast(1.05)',
-            warm: 'saturate(1.15) hue-rotate(8deg) brightness(1.05) contrast(1.02)'
-          };
-          this.video.style.filter = filterMap[this.filter];
-        },
+  /* ---------------- Config (chỉnh nhanh tại đây) ---------------- */
+  var BRAND_TEXT = "PHOTOBOOTH";
+  var FRAME_W = 900, FRAME_H = 1200;      // tỉ lệ 3:4 cho mỗi khung ảnh
+  var FILTERS = {
+    none:    'none',
+    bw:      'grayscale(1) contrast(1.12)',
+    vintage: 'sepia(.35) saturate(1.3) contrast(1.05) brightness(1.02)',
+    cool:    'saturate(1.1) hue-rotate(-10deg) brightness(1.02) contrast(1.05)',
+    warm:    'saturate(1.15) hue-rotate(8deg) brightness(1.05) contrast(1.02)'
+  };
 
-        showError(title, steps = []) {
-          this.errorMessage = title;
-          this.errorSteps = steps;
-        },
+  /* ---------------- State ---------------- */
+  var state = {
+    stream: null,
+    facingMode: 'user',
+    filter: 'none',
+    mode: 'single',
+    shots: [],          // captured raw <canvas> frames (unmirrored)
+    busy: false
+  };
 
-        requestCameraAndEnter() {
-          if (!window.isSecureContext) {
-            this.showError('Trang chưa chạy trên kết nối an toàn (HTTPS)', 
-              ['Camera trên trình duyệt chỉ hoạt động qua https://']);
-            return;
-          }
-          if (!navigator.mediaDevices?.getUserMedia) {
-            this.showError('Trình duyệt này không hỗ trợ camera');
-            return;
-          }
-          this.startCamera().catch(err => this.explainError(err));
-        },
+  /* ---------------- Elements ---------------- */
+  var els = {
+    startScreen: document.getElementById('start-screen'),
+    cameraScreen: document.getElementById('camera-screen'),
+    resultScreen: document.getElementById('result-screen'),
+    btnStart: document.getElementById('btn-start'),
+    video: document.getElementById('video'),
+    canvas: document.getElementById('canvas'),
+    countdown: document.getElementById('countdown'),
+    flash: document.getElementById('flash'),
+    shutter: document.getElementById('btn-shutter'),
+    btnFlip: document.getElementById('btn-flip'),
+    btnHome: document.getElementById('btn-home'),
+    filterRow: document.getElementById('filter-row'),
+    modeRow: document.getElementById('mode-row'),
+    shotcount: document.getElementById('shotcount'),
+    resultImg: document.getElementById('result-img'),
+    btnRetake: document.getElementById('btn-retake'),
+    btnDownload: document.getElementById('btn-download'),
+    errorBox: document.getElementById('error-box')
+  };
 
-        startCamera() {
-          this.stopStream();
-          const constraints = {
-            audio: false,
-            video: {
-              facingMode: this.facingMode,
-              width: { ideal: 1920 },
-              height: { ideal: 1920 }
-            }
-          };
-          
-          return navigator.mediaDevices.getUserMedia(constraints)
-            .catch(err => {
-              if (err.name === 'OverconstrainedError') {
-                return navigator.mediaDevices.getUserMedia({ audio: false, video: true });
-              }
-              throw err;
-            })
-            .then(stream => {
-              this.stream = stream;
-              this.video.srcObject = stream;
-              const track = stream.getVideoTracks()[0];
-              const settings = track?.getSettings?.();
-              this.isMirrored = settings?.facingMode === 'user' || this.facingMode === 'user';
-              this.setupVideoFilter();
-              this.currentScreen = 'camera';
-            });
-        },
+  function showScreen(name){
+    els.startScreen.style.display  = name === 'start'  ? 'flex' : 'none';
+    els.cameraScreen.style.display = name === 'camera' ? 'flex' : 'none';
+    els.resultScreen.style.display = name === 'result' ? 'flex' : 'none';
+  }
 
-        explainError(err) {
-          const name = err?.name || 'Unknown';
-          if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-            this.showError('Camera bị chặn quyền truy cập', [
-              this.isIOS() 
-                ? 'Safari &gt; Cài đặt &gt; Camera, chọn "Cho phép"'
-                : 'Bấm ổ khóa 🔒 trên thanh địa chỉ &gt; cho phép Camera'
-            ]);
-          } else if (name === 'NotFoundError') {
-            this.showError('Không tìm thấy camera trên thiết bị');
-          } else if (name === 'NotReadableError') {
-            this.showError('Camera đang được app khác sử dụng');
+  /* ---------------- Error helper ----------------
+     Hiển thị lỗi kèm hướng dẫn khắc phục cụ thể theo loại lỗi, để người
+     dùng biết chính xác phải bấm vào đâu trên iPhone / PC.
+  */
+  function isIOS(){
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  function showError(title, steps){
+    var html = '<span class="err-title">' + title + '</span>';
+    if (steps && steps.length){
+      html += '<ul class="err-steps">' + steps.map(function(s){ return '<li>' + s + '</li>'; }).join('') + '</ul>';
+    }
+    html += '<button class="btn small" id="btn-retry-perm">Thử lại</button>';
+    els.errorBox.innerHTML = html;
+    els.errorBox.style.display = 'block';
+    var retryBtn = document.getElementById('btn-retry-perm');
+    if (retryBtn){
+      retryBtn.addEventListener('click', function(){
+        els.errorBox.style.display = 'none';
+        requestCameraAndEnter();
+      });
+    }
+  }
+
+  function clearError(){
+    els.errorBox.style.display = 'none';
+    els.errorBox.innerHTML = '';
+  }
+
+  function explainGetUserMediaError(err){
+    var name = err && err.name ? err.name : 'UnknownError';
+
+    if (name === 'NotAllowedError' || name === 'PermissionDeniedError'){
+      if (isIOS()){
+        showError('Camera đang bị chặn quyền truy cập (' + name + ')', [
+          'Vào <b>Cài đặt</b> (Settings) &gt; <b>Safari</b> &gt; mục <b>Camera</b>, chọn "Hỏi" hoặc "Cho phép".',
+          'Nếu bạn đang mở link này từ trong app khác (Gmail, Messenger, Zalo...), hãy mở lại bằng trình duyệt Safari.',
+          'Nếu vẫn không được: chạm vào biểu tượng "aA" trên thanh địa chỉ Safari &gt; Website Settings &gt; đặt Camera = Allow, rồi tải lại trang.'
+        ]);
+      } else {
+        showError('Trình duyệt đang chặn quyền camera (' + name + ')', [
+          'Bấm vào biểu tượng ổ khóa 🔒 hoặc camera trên thanh địa chỉ &gt; chọn "Cho phép" (Allow) cho Camera.',
+          'Tải lại trang sau khi đổi quyền, rồi bấm "Bật camera" lại.'
+        ]);
+      }
+    } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError'){
+      showError('Không tìm thấy camera trên thiết bị này', [
+        'Kiểm tra máy có camera và không có ứng dụng khác đang chiếm quyền sử dụng.'
+      ]);
+    } else if (name === 'NotReadableError' || name === 'TrackStartError'){
+      showError('Camera đang được ứng dụng khác sử dụng', [
+        'Đóng các app/tab khác đang dùng camera (Zoom, FaceTime, tab khác...) rồi thử lại.'
+      ]);
+    } else if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError'){
+      showError('Thiết bị không hỗ trợ cấu hình camera yêu cầu', [
+        'Đang thử lại với cấu hình camera đơn giản hơn...'
+      ]);
+    } else if (name === 'SecurityError' || !window.isSecureContext){
+      showError('Trang chưa chạy trên kết nối an toàn (HTTPS)', [
+        'Camera trên trình duyệt chỉ hoạt động khi trang được mở qua địa chỉ https:// — hãy mở đúng link .../exec do Apps Script cấp.'
+      ]);
+    } else {
+      showError('Không mở được camera (' + name + ')', [
+        'Thử tải lại trang, hoặc mở link bằng Safari/Chrome mới nhất.',
+        'Trên iPhone: mở trực tiếp bằng Safari, không qua app nhúng trình duyệt (Gmail, Zalo, Messenger...).'
+      ]);
+    }
+  }
+
+  /* ---------------- Camera ---------------- */
+  function stopStream(){
+    if (state.stream){
+      state.stream.getTracks().forEach(function(t){ t.stop(); });
+      state.stream = null;
+    }
+  }
+
+  // Thử xin quyền + mở camera với cấu hình lý tưởng trước (facingMode + độ
+  // phân giải mong muốn). Nếu thiết bị (thường là PC/webcam) không đáp ứng
+  // được facingMode, tự động thử lại với cấu hình tối giản {video:true} —
+  // đây chính là bước xin quyền camera, trình duyệt sẽ tự hiện popup hỏi
+  // quyền ngay tại đây (không cần code thêm để "gọi" popup).
+  function openCameraStream(){
+    var idealConstraints = {
+      audio: false,
+      video: {
+        facingMode: state.facingMode,
+        width:  { ideal: 1920 },
+        height: { ideal: 1920 }
+      }
+    };
+    return navigator.mediaDevices.getUserMedia(idealConstraints).catch(function(err){
+      if (err && (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError')){
+        // Thường gặp trên PC/webcam không hỗ trợ facingMode — thử lại đơn giản.
+        return navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+      }
+      throw err;
+    });
+  }
+
+  function startCamera(){
+    stopStream();
+    return openCameraStream().then(function(stream){
+      state.stream = stream;
+      els.video.srcObject = stream;
+      var track = stream.getVideoTracks()[0];
+      var settings = track && track.getSettings ? track.getSettings() : {};
+      // Chỉ mirror khi thực sự đang dùng camera trước, kể cả khi trình
+      // duyệt tự chọn camera khác với facingMode đã yêu cầu.
+      els.video.classList.toggle('mirror', settings.facingMode ? settings.facingMode === 'user' : state.facingMode === 'user');
+      els.video.style.filter = FILTERS[state.filter];
+    });
+  }
+
+  // Điểm duy nhất gọi getUserMedia lần đầu — LUÔN được gọi trực tiếp bên
+  // trong một sự kiện click (user gesture), đúng yêu cầu bắt buộc của
+  // Safari/iOS để popup xin quyền camera có thể hiện ra.
+  function requestCameraAndEnter(){
+    if (!window.isSecureContext){
+      explainGetUserMediaError({ name: 'SecurityError' });
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      showError('Trình duyệt này không hỗ trợ truy cập camera', [
+        'Trên iPhone: dùng Safari (không dùng trình duyệt trong app Gmail/Facebook/Zalo).',
+        'Trên PC: dùng Chrome, Edge, Firefox hoặc Safari bản mới.'
+      ]);
+      return;
+    }
+    clearError();
+    startCamera().then(function(){
+      showScreen('camera');
+    }).catch(function(err){
+      explainGetUserMediaError(err || {});
+    });
+  }
+
+  els.btnStart.addEventListener('click', requestCameraAndEnter);
+
+  els.btnFlip.addEventListener('click', function(){
+    if (state.busy) return;
+    state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
+    startCamera().catch(function(err){
+      explainGetUserMediaError(err || {});
+    });
+  });
+
+  els.btnHome.addEventListener('click', function(){
+    if (state.busy) return;
+    stopStream();
+    showScreen('start');
+  });
+
+  /* ---------------- Filters & mode chips ---------------- */
+  els.filterRow.addEventListener('click', function(e){
+    var chip = e.target.closest('.chip');
+    if (!chip || state.busy) return;
+    Array.prototype.forEach.call(els.filterRow.children, function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+    state.filter = chip.getAttribute('data-filter');
+    els.video.style.filter = FILTERS[state.filter];
+  });
+
+  els.modeRow.addEventListener('click', function(e){
+    var chip = e.target.closest('.chip');
+    if (!chip || state.busy) return;
+    Array.prototype.forEach.call(els.modeRow.children, function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+    state.mode = chip.getAttribute('data-mode');
+  });
+
+  /* ---------------- Capture helpers ---------------- */
+  // Crop-to-cover the live video into a FRAME_W x FRAME_H canvas, applying the
+  // active filter. NOTE: we intentionally draw the *unmirrored* raw frame even
+  // when the preview is mirrored, so text/writing in the saved photo reads correctly.
+  function grabFrame(){
+    var vw = els.video.videoWidth, vh = els.video.videoHeight;
+    var targetRatio = FRAME_W / FRAME_H;
+    var srcRatio = vw / vh;
+    var sx, sy, sw, sh;
+    if (srcRatio > targetRatio){
+      sh = vh; sw = vh * targetRatio; sx = (vw - sw) / 2; sy = 0;
+    } else {
+      sw = vw; sh = vw / targetRatio; sx = 0; sy = (vh - sh) / 2;
+    }
+    var c = document.createElement('canvas');
+    c.width = FRAME_W; c.height = FRAME_H;
+    var ctx = c.getContext('2d');
+    ctx.filter = FILTERS[state.filter];
+    ctx.drawImage(els.video, sx, sy, sw, sh, 0, 0, FRAME_W, FRAME_H);
+    return c;
+  }
+
+  function fireFlash(){
+    els.flash.classList.remove('fire');
+    void els.flash.offsetWidth; // restart animation
+    els.flash.classList.add('fire');
+  }
+
+  function countdownThen(seconds, cb){
+    var n = seconds;
+    function tick(){
+      if (n <= 0){ els.countdown.innerHTML = ''; cb(); return; }
+      els.countdown.innerHTML = '<span class="display">' + n + '</span>';
+      n--;
+      setTimeout(tick, 800);
+    }
+    tick();
+  }
+
+  function updateShotCount(){
+    if (state.mode !== 'strip3'){ els.shotcount.style.display = 'none'; return; }
+    els.shotcount.style.display = 'block';
+    els.shotcount.textContent = 'Tấm ' + (state.shots.length + 1) + ' / 3';
+  }
+
+  els.shutter.addEventListener('click', function(){
+    if (state.busy) return;
+    state.busy = true;
+    els.shutter.setAttribute('disabled', 'true');
+    state.shots = [];
+    var totalShots = state.mode === 'strip3' ? 3 : 1;
+
+    function nextShot(){
+      updateShotCount();
+      countdownThen(state.shots.length === 0 ? 3 : 2, function(){
+        fireFlash();
+        setTimeout(function(){
+          state.shots.push(grabFrame());
+          if (state.shots.length < totalShots){
+            nextShot();
           } else {
-            this.showError(`Lỗi: ${name}`, ['Thử tải lại trang hoặc dùng trình duyệt khác']);
+            finishCapture();
           }
-        },
+        }, 120);
+      });
+    }
+    nextShot();
+  });
 
-        toggleCamera() {
-          if (this.busy) return;
-          this.facingMode = this.facingMode === 'user' ? 'environment' : 'user';
-          this.startCamera().catch(err => this.explainError(err));
-        },
+  /* ---------------- Compose final image ---------------- */
+  function timestamp(){
+    var d = new Date();
+    function p(n){ return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '' + p(d.getMonth()+1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+  }
 
-        stopStream() {
-          if (this.stream) {
-            this.stream.getTracks().forEach(t => t.stop());
-            this.stream = null;
-          }
-        },
+  function drawSprocketColumn(ctx, x, top, bottom, holeW, holeH, gap){
+    var y = top;
+    while (y + holeH <= bottom){
+      ctx.fillStyle = '#0B0609';
+      roundRect(ctx, x, y, holeW, holeH, 3);
+      ctx.fill();
+      y += holeH + gap;
+    }
+  }
+  function roundRect(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
+  }
 
-        grabFrame() {
-          const vw = this.video.videoWidth, vh = this.video.videoHeight;
-          const frameW = 900, frameH = 1200;
-          const targetRatio = frameW / frameH, srcRatio = vw / vh;
-          
-          let sx, sy, sw, sh;
-          if (srcRatio > targetRatio) {
-            sh = vh; sw = vh * targetRatio; sx = (vw - sw) / 2; sy = 0;
-          } else {
-            sw = vw; sh = vw / targetRatio; sx = 0; sy = (vh - sh) / 2;
-          }
-          
-          const c = document.createElement('canvas');
-          c.width = frameW; c.height = frameH;
-          const ctx = c.getContext('2d');
-          const filterMap = {
-            none: 'none',
-            bw: 'grayscale(1) contrast(1.12)',
-            vintage: 'sepia(.35) saturate(1.3) contrast(1.05) brightness(1.02)',
-            cool: 'saturate(1.1) hue-rotate(-10deg) brightness(1.02) contrast(1.05)',
-            warm: 'saturate(1.15) hue-rotate(8deg) brightness(1.05) contrast(1.02)'
-          };
-          ctx.filter = filterMap[this.filter];
-          ctx.drawImage(this.video, sx, sy, sw, sh, 0, 0, frameW, frameH);
-          return c;
-        },
+  function composeFinal(){
+    var margin = 40, gap = 24, side = 34, footer = 90;
+    var n = state.shots.length;
+    var W = FRAME_W + side * 2 + margin * 2;
+    var H = margin + n * FRAME_H + (n - 1) * gap + margin + footer;
 
-        async capturePhoto() {
-          if (this.busy) return;
-          this.busy = true;
-          this.shots = [];
-          const totalShots = this.mode === 'strip3' ? 3 : 1;
-          
-          const captureShot = async () => {
-            await this.countdown(this.shots.length === 0 ? 3 : 2);
-            this.fireFlash();
-            await new Promise(r => setTimeout(r, 120));
-            this.shots.push(this.grabFrame());
-            
-            if (this.shots.length < totalShots) {
-              await captureShot();
-            } else {
-              this.finishCapture();
-            }
-          };
-          
-          await captureShot();
-        },
+    var c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    var ctx = c.getContext('2d');
 
-        countdown(seconds) {
-          return new Promise(resolve => {
-            let n = seconds;
-            const tick = () => {
-              if (n <= 0) {
-                this.showCountdown = false;
-                resolve();
-              } else {
-                this.countdownNumber = n;
-                this.showCountdown = true;
-                n--;
-                setTimeout(tick, 800);
-              }
-            };
-            tick();
-          });
-        },
+    // background
+    var grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#241720');
+    grad.addColorStop(1, '#170F13');
+    ctx.fillStyle = grad;
+    roundRect(ctx, 0, 0, W, H, 26); ctx.fill();
 
-        fireFlash() {
-          const flash = document.createElement('div');
-          flash.className = 'fixed inset-0 bg-white pointer-events-none z-50';
-          flash.style.animation = 'fadeOut 0.35s ease-out forwards';
-          document.body.appendChild(flash);
-          setTimeout(() => flash.remove(), 350);
-        },
-
-        composeFinal() {
-          const margin = 40, gap = 24, side = 34, footer = 90;
-          const frameW = 900, frameH = 1200;
-          const n = this.shots.length;
-          const W = frameW + side * 2 + margin * 2;
-          const H = margin + n * frameH + (n - 1) * gap + margin + footer;
-
-          const c = document.createElement('canvas');
-          c.width = W; c.height = H;
-          const ctx = c.getContext('2d');
-
-          const grad = ctx.createLinearGradient(0, 0, 0, H);
-          grad.addColorStop(0, '#241720');
-          grad.addColorStop(1, '#170F13');
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, W, H);
-
-          let y = margin;
-          for (let i = 0; i < n; i++) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.roundRect?.(margin + side, y, frameW, frameH, 12) || 
-              this.roundRect(ctx, margin + side, y, frameW, frameH, 12);
-            ctx.clip();
-            ctx.drawImage(this.shots[i], margin + side, y);
-            
-            const vg = ctx.createRadialGradient(
-              margin+side+frameW/2, y+frameH/2, frameH*0.35,
-              margin+side+frameW/2, y+frameH/2, frameH*0.75
-            );
-            vg.addColorStop(0, 'rgba(0,0,0,0)');
-            vg.addColorStop(1, 'rgba(0,0,0,0.22)');
-            ctx.fillStyle = vg;
-            ctx.fillRect(margin+side, y, frameW, frameH);
-            ctx.restore();
-            y += frameH + gap;
-          }
-
-          ctx.fillStyle = '#F5ECDD';
-          ctx.font = '700 34px Outfit, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('📸 PHOTOBOOTH', W/2, H - 46);
-          ctx.fillStyle = '#B29C90';
-          ctx.font = '500 20px Outfit, sans-serif';
-          ctx.fillText(new Date().toLocaleDateString('vi-VN'), W/2, H - 18);
-
-          return c;
-        },
-
-        roundRect(ctx, x, y, w, h, r) {
-          ctx.beginPath();
-          ctx.moveTo(x+r, y);
-          ctx.arcTo(x+w, y, x+w, y+h, r);
-          ctx.arcTo(x+w, y+h, x, y+h, r);
-          ctx.arcTo(x, y+h, x, y, r);
-          ctx.arcTo(x, y, x+w, y, r);
-          ctx.closePath();
-        },
-
-        finishCapture() {
-          this.stopStream();
-          const final = this.composeFinal();
-          document.getElementById('result-img').src = final.toDataURL('image/png');
-          document.getElementById('result-img').dataset.filename = 
-            'photobooth_' + new Date().toISOString().slice(0,19).replace(/[-:]/g,'') + '.png';
-          this.busy = false;
-          this.currentScreen = 'result';
-        },
-
-        downloadPhoto() {
-          const img = document.getElementById('result-img');
-          const a = document.createElement('a');
-          a.href = img.src;
-          a.download = img.dataset.filename || 'photobooth.png';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        },
-
-        retakePhoto() {
-          this.shots = [];
-          this.startCamera().catch(err => {
-            this.explainError(err);
-            this.currentScreen = 'start';
-          });
-        },
-
-        goHome() {
-          if (this.busy) return;
-          this.stopStream();
-          this.currentScreen = 'start';
-        }
-      };
+    // photos
+    var y = margin;
+    for (var i = 0; i < n; i++){
+      ctx.save();
+      roundRect(ctx, margin + side, y, FRAME_W, FRAME_H, 12);
+      ctx.clip();
+      ctx.drawImage(state.shots[i], margin + side, y);
+      // subtle vignette for a film feel
+      var vg = ctx.createRadialGradient(
+        margin+side+FRAME_W/2, y+FRAME_H/2, FRAME_H*0.35,
+        margin+side+FRAME_W/2, y+FRAME_H/2, FRAME_H*0.75
+      );
+      vg.addColorStop(0, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.22)');
+      ctx.fillStyle = vg;
+      ctx.fillRect(margin+side, y, FRAME_W, FRAME_H);
+      ctx.restore();
+      y += FRAME_H + gap;
     }
 
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes fadeOut { 
-        0% { opacity: 1; } 
-        100% { opacity: 0; } 
-      }
-      .text-shadow {
-        text-shadow: 0 0 40px rgba(0,0,0,.8), 0 2px 8px rgba(0,0,0,.6);
-      }
-    `;
-    document.head.appendChild(style);
-  </script>
+    // sprocket holes, left & right, full height of the photo area
+    var photosBottom = margin + n * FRAME_H + (n - 1) * gap;
+    drawSprocketColumn(ctx, margin + 10, margin, photosBottom, 14, 22, 16);
+    drawSprocketColumn(ctx, margin + side + FRAME_W + 10, margin, photosBottom, 14, 22, 16);
+
+    // footer wordmark
+    ctx.fillStyle = '#F5ECDD';
+    ctx.font = '700 34px "Space Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(BRAND_TEXT, W/2, H - 46);
+    ctx.fillStyle = '#B29C90';
+    ctx.font = '500 20px "Space Grotesk", sans-serif';
+    var d = new Date();
+    ctx.fillText(d.toLocaleDateString('vi-VN'), W/2, H - 18);
+
+    return c;
+  }
+
+  function finishCapture(){
+    stopStream();
+    var final = composeFinal();
+    els.resultImg.src = final.toDataURL('image/png');
+    els.resultImg.dataset.filename = 'photobooth_' + timestamp() + '.png';
+    state.busy = false;
+    els.shutter.removeAttribute('disabled');
+    showScreen('result');
+  }
+
+  /* ---------------- Result actions ---------------- */
+  els.btnDownload.addEventListener('click', function(){
+    var a = document.createElement('a');
+    a.href = els.resultImg.src;
+    a.download = els.resultImg.dataset.filename || 'photobooth.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+
+  els.btnRetake.addEventListener('click', function(){
+    startCamera().then(function(){
+      showScreen('camera');
+    }).catch(function(err){
+      explainGetUserMediaError(err || {});
+      showScreen('start');
+    });
+  });
+
+})();
+</script>
 </body>
 </html>
